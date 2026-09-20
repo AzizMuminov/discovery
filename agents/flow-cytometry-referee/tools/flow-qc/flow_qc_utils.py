@@ -20,7 +20,7 @@ def load_fcs(path: str | Path) -> tuple[dict[str, Any], pd.DataFrame]:
     flow_data = FlowData(str(path))
     channel_numbers = sorted(flow_data.channels, key=lambda value: int(value))
     channel_names = [
-        flow_data.channels[number].get("PnN") or f"channel_{number}"
+        flow_data.channels[number].get("pnn") or f"channel_{number}"
         for number in channel_numbers
     ]
     event_count = int(flow_data.event_count)
@@ -28,7 +28,7 @@ def load_fcs(path: str | Path) -> tuple[dict[str, Any], pd.DataFrame]:
     events = np.asarray(flow_data.events, dtype=float).reshape(event_count, channel_count)
     metadata = {str(key): value for key, value in flow_data.text.items()}
     metadata["_channel_ranges"] = {
-        name: flow_data.channels[number].get("PnR")
+        name: flow_data.channels[number].get("pnr")
         for name, number in zip(channel_names, channel_numbers, strict=True)
     }
     return metadata, pd.DataFrame(events, columns=channel_names)
