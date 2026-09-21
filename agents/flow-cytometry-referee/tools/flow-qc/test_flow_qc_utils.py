@@ -5,10 +5,11 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from flowio import create_fcs
 
 sys.path.insert(0, str(Path(__file__).parent))
-from flow_qc_utils import build_qc_report, load_fcs
+from flow_qc_utils import build_qc_report, load_fcs, write_qc_artifacts
 
 
 def test_load_fcs_preserves_channel_names_and_time_qc(tmp_path: Path) -> None:
@@ -40,3 +41,13 @@ def test_load_fcs_preserves_channel_names_and_time_qc(tmp_path: Path) -> None:
     assert report["time_integrity"]["available"] is True
     assert report["outlier_summary"]["available"] is True
     assert json.dumps(report)
+
+
+def test_write_qc_artifacts_creates_dashboard_and_csv(tmp_path: Path) -> None:
+    events = pd.DataFrame(
+        {"FSC-A": [100, 200, 300], "SSC-A": [20, 30, 40], "Time": [0, 1, 2], "FITC-A": [10, 30, 20]}
+    )
+    report = build_qc_report({"_channel_ranges": {}}, events)
+    artifacts = write_qc_artifacts(report, events, tmp_path, "fixture")
+    assert Path(artifacts["qc_dashboard"]).read_bytes().startswith(b"\x89PNG")
+    assert Path(artifacts["channel_summary_csv"]).is_file()

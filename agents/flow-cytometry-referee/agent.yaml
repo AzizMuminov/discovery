@@ -40,7 +40,8 @@ instructions: |
      technically invalid condition such as an unreadable FCS file, no events, or non-finite event values that
      make the requested analysis impossible.
   5. Produce a concise remediation plan ordered by impact. Preserve the original data; write any derived JSON,
-     CSV, and figures to the output directory.
+     CSV, and figures to the output directory. When FCS event data is available, create a technical QC dashboard
+     with scatter, distribution, acquisition-time, and saturation panels through `write_qc_artifacts`.
 
   ## Required response format
   - Scope and supplied evidence

@@ -113,3 +113,69 @@ def build_qc_report(metadata: dict[str, Any], events: pd.DataFrame) -> dict[str,
             "Gate quality requires the gating plan and control evidence in addition to event measurements.",
         ],
     }
+
+
+def write_qc_artifacts(
+    report: dict[str, Any], events: pd.DataFrame, output_dir: str | Path, stem: str = "flow_qc"
+) -> dict[str, str]:
+    """Write a technical QC dashboard and channel-summary CSV, returning their paths."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    dashboard = target / f"{stem}_dashboard.png"
+    summary_csv = target / f"{stem}_channel_summary.csv"
+    pd.DataFrame(report["channel_summaries"]).to_csv(summary_csv, index=False)
+
+    def first_matching(*terms: str) -> str | None:
+        return next((name for name in events.columns if any(term in name.lower() for term in terms)), None)
+
+    fsc, ssc, time = first_matching("fsc"), first_matching("ssc"), first_matching("time")
+    excluded = {name for name in (fsc, ssc, time) if name}
+    signal = next((name for name in events.columns if name not in excluded), events.columns[0])
+    sample = events.iloc[: min(len(events), 20_000)]
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+
+    scatter = axes[0, 0]
+    if fsc and ssc:
+        scatter.scatter(sample[fsc], sample[ssc], s=1, alpha=0.18, rasterized=True)
+        scatter.set(xlabel=fsc, ylabel=ssc, title="Forward vs. side scatter")
+    else:
+        scatter.text(0.5, 0.5, "FSC/SSC channels not found", ha="center", va="center")
+        scatter.set_axis_off()
+
+    distribution = axes[0, 1]
+    values = sample[signal].to_numpy(dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size:
+        distribution.hist(values, bins=80, color="#3478bf", alpha=0.85)
+        distribution.set(xlabel=signal, ylabel="Events", title="Representative channel distribution")
+    else:
+        distribution.text(0.5, 0.5, "No finite values", ha="center", va="center")
+        distribution.set_axis_off()
+
+    trend = axes[1, 0]
+    if time:
+        trend.plot(sample.index, sample[time], linewidth=0.6, color="#4d8c57")
+        trend.set(xlabel="Event index", ylabel=time, title="Acquisition time trend")
+    else:
+        trend.text(0.5, 0.5, "Time channel not found", ha="center", va="center")
+        trend.set_axis_off()
+
+    saturation = axes[1, 1]
+    summaries = report["channel_summaries"]
+    labels = [item["channel"] for item in summaries]
+    fractions = [item["saturation_fraction"] or 0.0 for item in summaries]
+    saturation.bar(range(len(labels)), fractions, color="#c45a3c")
+    saturation.set_xticks(range(len(labels)), labels, rotation=40, ha="right", fontsize=8)
+    saturation.set(ylabel="Fraction at or above declared range", title="Reported channel saturation")
+    saturation.set_ylim(0, max(0.01, max(fractions, default=0.0) * 1.15))
+
+    fig.suptitle("Flow cytometry technical QC dashboard", fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(dashboard, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    return {"qc_dashboard": str(dashboard), "channel_summary_csv": str(summary_csv)}

@@ -31,6 +31,6 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser && \
 
 USER appuser
 WORKDIR /workdir
-ENV PYTHONPATH=/app:${PYTHONPATH}
+ENV PYTHONPATH=/app
 
 CMD ["/bin/bash"]
