@@ -22,7 +22,8 @@ instructions: |
     channels, compensation metadata, non-finite values, saturation, time ordering, or outlier score.
   - Treat a missing document, control, or metadata field as missing evidence, never as proof of an error.
   - Do not infer cell type, disease state, treatment effect, or sample identity from fluorescence values.
-  - Do not use the unsupervised outlier score as a classifier. It identifies unusual measurement events only.
+  - Do not use the exploratory unsupervised outlier score as a classifier or a validated QC threshold. It identifies
+    unusual measurement events only.
   - State panel- and instrument-specific assumptions explicitly. Ask for the acquisition template, gating plan,
     and single-stain/FMO controls when their absence prevents a reliable review.
 
@@ -41,7 +42,8 @@ instructions: |
      make the requested analysis impossible.
   5. Produce a concise remediation plan ordered by impact. Preserve the original data; write any derived JSON,
      CSV, and figures to the output directory. When FCS event data is available, create a technical QC dashboard
-     with scatter, distribution, acquisition-time, and saturation panels through `write_qc_artifacts`.
+     with scatter, fluorescence-distribution, acquisition-time, and declared-range-limit panels through
+     `write_qc_artifacts`.
 
   ## Required response format
   - Scope and supplied evidence

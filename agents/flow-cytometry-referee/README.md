@@ -13,9 +13,10 @@ must be supplied before a gating workflow can be considered reproducible.
 ## Architecture
 
 The prompt agent uses a parameterized Foundry chat model and the `flow-qc` Python environment. The environment reads
-FCS events with `flowio`, calculates deterministic channel and acquisition summaries, and can calculate an optional
-Isolation Forest outlier fraction. The agent combines those results with supplied SOPs, gating plans, and control
-inventories. The outlier score flags unusual measurement events only; it does not classify cells or samples.
+FCS events with `flowio`, calculates deterministic channel and acquisition summaries, validates the shape and channel
+names of a stored spillover matrix when present, and can calculate an optional exploratory Isolation Forest outlier
+fraction. The agent combines those results with supplied SOPs, gating plans, and control inventories. The outlier
+score flags unusual measurement events only; it does not classify cells or samples or establish a QC threshold.
 
 ## Prerequisites
 
@@ -43,9 +44,10 @@ inventories. The outlier score flags unusual measurement events only; it does no
 ## Tools
 
 `flow-qc` provides a Python code environment with `flowio`, NumPy, pandas, scikit-learn, and `flow_qc_utils`.
-It can read standard FCS files, summarize event and channel values, inspect compensation-related metadata, evaluate a
-time channel when present, and calculate an unsupervised event-outlier fraction. Derived reports belong in the
-configured output directory.
+It can read standard FCS files, summarize event and channel values, inspect and validate stored compensation-related
+metadata, evaluate acquisition-time continuity, calculate an exploratory event-outlier fraction, and create a
+technical QC dashboard. A declared-range-limit fraction is a measurement-range check, not proof of detector
+saturation. Derived reports belong in the configured output directory.
 
 ## Known Limitations
 

@@ -45,9 +45,22 @@ def test_load_fcs_preserves_channel_names_and_time_qc(tmp_path: Path) -> None:
 
 def test_write_qc_artifacts_creates_dashboard_and_csv(tmp_path: Path) -> None:
     events = pd.DataFrame(
-        {"FSC-A": [100, 200, 300], "SSC-A": [20, 30, 40], "Time": [0, 1, 2], "FITC-A": [10, 30, 20]}
+        {
+            "FSC-A": [100, 200, 300],
+            "FSC-H": [90, 190, 290],
+            "SSC-A": [20, 30, 40],
+            "Time": [0, 1, 2],
+            "Event #": [1, 2, 3],
+            "FITC-A": [10, 30, 20],
+        }
     )
-    report = build_qc_report({"_channel_ranges": {}}, events)
+    report = build_qc_report(
+        {"_channel_ranges": {"Event #": 3, "FITC-A": 100}, "_channel_stains": {}}, events
+    )
     artifacts = write_qc_artifacts(report, events, tmp_path, "fixture")
     assert Path(artifacts["qc_dashboard"]).read_bytes().startswith(b"\x89PNG")
     assert Path(artifacts["channel_summary_csv"]).is_file()
+    assert report["channel_roles"]["index"] == ["Event #"]
+    event_summary = next(item for item in report["channel_summaries"] if item["channel"] == "Event #")
+    assert event_summary["at_declared_range_fraction"] is None
+    assert "FSC-H" not in report["channel_roles"]["fluorescence"]
