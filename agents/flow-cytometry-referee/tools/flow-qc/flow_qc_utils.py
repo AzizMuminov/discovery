@@ -12,12 +12,22 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from flowio import FlowData
+from flowio.exceptions import FCSParsingError
 from sklearn.ensemble import IsolationForest
 
 
 def load_fcs(path: str | Path) -> tuple[dict[str, Any], pd.DataFrame]:
     """Read an FCS file into metadata and an events-by-channel DataFrame."""
-    flow_data = FlowData(str(path))
+    parse_warnings: list[str] = []
+    try:
+        flow_data = FlowData(str(path))
+    except FCSParsingError as error:
+        if "offset" not in str(error).lower():
+            raise
+        flow_data = FlowData(str(path), ignore_offset_error=True)
+        parse_warnings.append(
+            "The FCS data offset was inconsistent; parsed with FlowIO's offset-recovery option."
+        )
     channel_numbers = sorted(flow_data.channels, key=lambda value: int(value))
     channel_names = [
         flow_data.channels[number].get("pnn") or f"channel_{number}"
@@ -31,6 +41,7 @@ def load_fcs(path: str | Path) -> tuple[dict[str, Any], pd.DataFrame]:
         name: flow_data.channels[number].get("pnr")
         for name, number in zip(channel_names, channel_numbers, strict=True)
     }
+    metadata["_parse_warnings"] = parse_warnings
     return metadata, pd.DataFrame(events, columns=channel_names)
 
 
@@ -105,6 +116,7 @@ def build_qc_report(metadata: dict[str, Any], events: pd.DataFrame) -> dict[str,
         "channel_count": int(events.shape[1]),
         "channels": list(events.columns),
         "compensation_metadata_present": _compensation_present(metadata),
+        "parse_warnings": metadata.get("_parse_warnings", []),
         "time_integrity": time_integrity,
         "channel_summaries": _channel_summary(events, metadata.get("_channel_ranges", {})),
         "outlier_summary": _outlier_summary(events),
