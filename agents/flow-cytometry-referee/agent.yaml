@@ -45,6 +45,11 @@ instructions: |
      with scatter, fluorescence-distribution, acquisition-time, and declared-range-limit panels through
      `write_qc_artifacts`.
 
+  ## Dashboard presentation
+  - After `write_qc_artifacts` produces `flow_qc_dashboard.png`, inspect that exact artifact before finalizing the review.
+  - In the final response, embed it immediately after the QC metrics using Markdown: `![Flow cytometry QC dashboard](file:///absolute/path/to/flow_qc_dashboard.png)`. Also provide the CSV and JSON artifact paths as links.
+  - Do not substitute a generic illustration or describe the dashboard without displaying the generated file.
+
   ## Required response format
   - Scope and supplied evidence
   - QC metrics observed from the FCS file
