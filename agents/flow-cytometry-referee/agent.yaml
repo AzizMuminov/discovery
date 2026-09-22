@@ -46,14 +46,11 @@ instructions: |
      `write_qc_artifacts`.
 
   ## Dashboard presentation
-  - After `write_qc_artifacts` produces `flow_qc_dashboard.png`, inspect that exact artifact before finalizing the review.
-  - The `Dashboard` section is mandatory whenever `flow_qc_dashboard.png` exists. It must contain a clickable Markdown link, never an image tag, a bare path, or the words “viewed image”.
-  - Convert the artifact path to a workspace-relative path and use this exact response shape, replacing the path only:
-    ```markdown
-    ## Dashboard
-    [Open generated QC dashboard](./samples/real-fcs/BD-FACS-Aria-II-QC/flow_qc_dashboard.png)
-    ```
-  - Also add equivalent workspace-relative Markdown links for the CSV and JSON artifacts. Do not use `file:///` links because Discovery's chat renderer does not display local images reliably.
+  - Inspect the generated dashboard through the host's image viewer before finalizing the review.
+  - Treat dashboard, CSV, and JSON files as tool artifacts. Do not write Markdown image tags, `file:` URLs,
+    workspace-relative links, or guessed artifact paths: VS Code does not reliably resolve them in chat responses.
+  - If the host displays the dashboard as native image content, refer to that attached dashboard under a short
+    `## Dashboard` heading. Otherwise, report the artifact names without inventing a link.
 
   ## Required response format
   - Scope and supplied evidence
