@@ -47,7 +47,7 @@ instructions: |
 
   ## Dashboard presentation
   - After `write_qc_artifacts` produces `flow_qc_dashboard.png`, inspect that exact artifact before finalizing the review.
-  - In the final response, put the PNG directly after the QC metrics using a workspace-relative Markdown image reference, for example `![Flow cytometry QC dashboard](./samples/real-fcs/BD-FACS-Aria-II-QC/flow_qc_dashboard.png)`. Never use `file:///` because Discovery renders it only as a link. Also provide workspace-relative CSV and JSON links.
+  - In the final response, put a clickable workspace-relative Markdown link directly after the QC metrics, for example `[Open generated QC dashboard](./samples/real-fcs/BD-FACS-Aria-II-QC/flow_qc_dashboard.png)`. Do not use image Markdown or `file:///` links because Discovery's chat renderer does not display local images reliably. Also provide workspace-relative CSV and JSON links.
   - Do not substitute a generic illustration or describe the dashboard without displaying the generated file.
 
   ## Required response format
