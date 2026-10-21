@@ -6,6 +6,11 @@ changes without modifying an open pull request. The workflow has two modes.
 The repository helper is the preferred interface. It uses the current branch by
 default and requires an authenticated GitHub CLI session (`gh auth login`).
 
+For the `pull_request_target` execution-policy exception, administrator rollout,
+and live canary requirements, see the
+[Actions execution policy plan](actions-execution-policy.md). Passing workflow
+tests does not activate an Actions policy.
+
 ## Test a candidate branch
 
 Leave `pr_number` blank. Both full-catalog jobs run from the selected branch and
