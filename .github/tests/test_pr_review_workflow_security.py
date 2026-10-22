@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -83,32 +84,51 @@ def test_validation_feedback_does_not_submit_blocking_bot_reviews():
     assert "requestReviewers" not in workflow_text
 
 
-def test_codeowners_targets_sensitive_paths_without_global_fanout():
-    active_lines = [
-        line.strip()
-        for line in CODEOWNERS_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.lstrip().startswith("#")
-    ]
+def owners_for_path(path: str) -> list[str]:
+    owners = []
+    for line in CODEOWNERS_PATH.read_text(encoding="utf-8").splitlines():
+        fields = line.partition("#")[0].split()
+        if not fields:
+            continue
+        pattern = fields[0]
+        # This policy uses only a global default and rooted directory overrides.
+        assert pattern == "*" or (
+            pattern.startswith("/") and pattern.endswith("/")
+        )
+        if pattern == "*" or path.startswith(pattern[1:]):
+            owners = fields[1:]
+    return owners
 
-    assert not any(line.split(maxsplit=1)[0] == "*" for line in active_lines)
-    assert any(line.startswith("/.github/") for line in active_lines)
-    assert any(line.startswith("/docs/schemas/") for line in active_lines)
-    assert not any(
-        line.split(maxsplit=1)[0] == "/utilities/"
-        for line in active_lines
-    )
-    assert any(
-        line.startswith("/utilities/supercomputer-cli/")
-        for line in active_lines
-    )
-    assert not any(
-        line.startswith("/utilities/discovery-toolbox/")
-        for line in active_lines
-    )
-    assert all(
-        line.split()[1:] == ["@microsoft/discovery-samples-maintainer"]
-        for line in active_lines
-    )
+
+@pytest.mark.parametrize("path", [
+    "README.md",
+    "docs/ordinary-guide.md",
+    ".github/CODEOWNERS",
+    ".github/workflows/pr-review.yml",
+    ".github/scripts/validate_pr.py",
+    ".github/policy/baseline.json",
+    "docs/validation-baseline-debt.md",
+    "docs/schemas/agent.schema.json",
+    ".auto-registry/agents.json",
+    "new-directory/nested/file.txt",
+    "docs/utilities/file.py",
+    "utilities-other/file.py",
+    "utilities/discovery-toolbox/README.md",
+    "utilities/discovery-toolbox/vsix/DiscoveryToolbox-v1.0.0.vsix",
+    "utilities/discovery-toolbox/new-directory/file.txt",
+])
+def test_non_utilities_and_toolbox_use_default_maintainers(path):
+    assert owners_for_path(path) == ["@microsoft/discovery-samples-maintainer"]
+
+
+@pytest.mark.parametrize("path", [
+    "utilities/README.md",
+    "utilities/supercomputer-cli/main.py",
+    "utilities/new-utility/nested/script.ps1",
+    "utilities/discovery-toolbox-other/file.py",
+])
+def test_utilities_use_engineering_reviewers(path):
+    assert owners_for_path(path) == ["@microsoft/discovery-engineering-reviewers"]
 
 
 def test_native_auto_merge_keeps_only_the_manifest_exception():
