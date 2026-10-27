@@ -5,7 +5,7 @@ associated_tools:
   - agents/flow-cytometry-referee/tools/flow-qc
 publisher:
   name: Aziz Muminov
-  contact: azizmuminov@users.noreply.github.com
+  contact: azizbekmuminov52@gmail.com
   support_url: https://github.com/AzizMuminov/discovery/issues
   party: 3p
 description: >
@@ -13,8 +13,7 @@ description: >
   control coverage, and reproducibility. Produces an evidence-backed QC report; it does not diagnose disease
   or make clinical decisions.
 tags:
-  - flow-cytometry
-  - fcs
-  - quality-control
   - single-cell
   - bioinformatics
+  - biomedical
+  - data-analysis
