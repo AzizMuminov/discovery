@@ -6,6 +6,7 @@ They do not assign cell types, make clinical predictions, or validate a laborato
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -266,3 +267,29 @@ def write_qc_artifacts(
     fig.savefig(dashboard, dpi=160, bbox_inches="tight")
     plt.close(fig)
     return {"qc_dashboard": str(dashboard), "channel_summary_csv": str(summary_csv)}
+
+
+def run_qc(
+    fcs_path: str | Path, output_dir: str | Path = ".", stem: str | None = None
+) -> dict[str, Any]:
+    """Review one FCS file and write its JSON report, channel-summary CSV, and QC dashboard.
+
+    This is the single entry point for agent-generated scripts. Artifact names start with ``stem``,
+    which defaults to the FCS file name without its extension.
+    """
+    source = Path(fcs_path)
+    metadata, events = load_fcs(source)
+    if len(events) == 0:
+        raise ValueError(f"{source.name} contains no events; no QC report was written.")
+    report = build_qc_report(metadata, events)
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    name = stem or source.stem
+    report_json = target / f"{name}_qc_report.json"
+    report_json.write_text(json.dumps(report, indent=2, allow_nan=False), encoding="utf-8")
+    artifacts = write_qc_artifacts(report, events, target, name)
+    return {
+        "fcs_file": str(source),
+        "artifacts": {"qc_report_json": str(report_json), **artifacts},
+        "report": report,
+    }

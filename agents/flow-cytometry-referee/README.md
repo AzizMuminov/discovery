@@ -49,6 +49,11 @@ metadata, evaluate acquisition-time continuity, calculate an exploratory event-o
 technical QC dashboard. A declared-range-limit fraction is a measurement-range check, not proof of detector
 saturation. Derived reports belong in the configured output directory.
 
+The agent calls `flow_qc_utils.run_qc(fcs_path, output_dir)` once per FCS file. It writes
+`<stem>_qc_report.json`, `<stem>_channel_summary.csv`, and `<stem>_dashboard.png`, where `<stem>` defaults to the
+FCS file name without its extension, and returns the report with the artifact paths. If the script fails, the tool
+run exits with Python's nonzero exit status.
+
 ## Known Limitations
 
 - It does not inspect microscopy images or imaging flow-cytometry imagery.
