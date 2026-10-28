@@ -101,12 +101,15 @@ def _channel_summary(
         finite = values[np.isfinite(values)]
         channel_range = ranges.get(name)
         try:
-            upper_limit = float(channel_range)
+            declared_range = float(channel_range)
         except (TypeError, ValueError):
-            upper_limit = None
+            declared_range = None
+        # $PnR counts the possible values (integer data spans 0 to $PnR - 1), so instruments
+        # record their maximum as $PnR - 1.
+        range_limit = declared_range - 1 if declared_range and declared_range > 1 else declared_range
         at_declared_range_fraction = (
-            float(np.mean(finite >= upper_limit))
-            if name in range_check_channels and upper_limit and finite.size
+            float(np.mean(finite >= range_limit))
+            if name in range_check_channels and range_limit and finite.size
             else None
         )
         summaries.append(
@@ -199,6 +202,12 @@ def build_qc_report(metadata: dict[str, Any], events: pd.DataFrame) -> dict[str,
     }
 
 
+def _dashboard_sample(events: pd.DataFrame, limit: int = 20_000) -> pd.DataFrame:
+    """Return up to ``limit`` events spaced evenly across the whole acquisition."""
+    positions = np.linspace(0, len(events) - 1, min(len(events), limit), dtype=int)
+    return events.iloc[positions]
+
+
 def write_qc_artifacts(
     report: dict[str, Any], events: pd.DataFrame, output_dir: str | Path, stem: str = "flow_qc"
 ) -> dict[str, str]:
@@ -219,7 +228,7 @@ def write_qc_artifacts(
     ssc = next((name for name in roles["scatter"] if name.lower().startswith("ssc")), None)
     time = roles["time"][0] if roles["time"] else None
     signal = roles["fluorescence"][0] if roles["fluorescence"] else None
-    sample = events.iloc[: min(len(events), 20_000)]
+    sample = _dashboard_sample(events)
     fig, axes = plt.subplots(2, 2, figsize=(12, 9))
 
     scatter = axes[0, 0]
@@ -257,12 +266,15 @@ def write_qc_artifacts(
     saturation.bar(range(len(labels)), fractions, color="#c45a3c")
     saturation.set_xticks(range(len(labels)), labels, rotation=40, ha="right", fontsize=8)
     saturation.set(
-        ylabel="Fraction at or above declared range",
-        title="Measurements at declared range limit",
+        ylabel="Fraction at declared range limit",
+        title="Measurements at declared range limit ($PnR - 1)",
     )
     saturation.set_ylim(0, max(0.01, max(fractions, default=0.0) * 1.15))
 
-    fig.suptitle("Flow cytometry technical QC dashboard", fontweight="bold")
+    fig.suptitle(
+        f"Flow cytometry technical QC dashboard ({len(sample):,} of {len(events):,} events, evenly sampled)",
+        fontweight="bold",
+    )
     fig.tight_layout()
     fig.savefig(dashboard, dpi=160, bbox_inches="tight")
     plt.close(fig)

@@ -70,6 +70,34 @@ def test_write_qc_artifacts_creates_dashboard_and_csv(tmp_path: Path) -> None:
     assert "FSC-H" not in report["channel_roles"]["fluorescence"]
 
 
+def test_declared_range_fraction_counts_values_at_instrument_maximum() -> None:
+    """$PnR = 1024 means values 0-1023, so events recorded at 1023 are at the range limit."""
+    events = pd.DataFrame(
+        {
+            "FSC-H": [100.0, 1023.0, 1023.0, 500.0],
+            "SSC-H": [10.0, 20.0, 30.0, 1022.0],
+            "Time": [0.0, 1.0, 2.0, 1023.0],
+        }
+    )
+    report = build_qc_report(
+        {"_channel_ranges": {"FSC-H": "1024", "SSC-H": "1024", "Time": "1024"}, "_channel_stains": {}},
+        events,
+    )
+    fractions = {row["channel"]: row["at_declared_range_fraction"] for row in report["channel_summaries"]}
+    assert fractions == {"FSC-H": 0.5, "SSC-H": 0.0, "Time": None}
+
+
+def test_dashboard_sample_spans_whole_run() -> None:
+    events = pd.DataFrame({"Time": np.arange(50_000, dtype=float)})
+
+    sample = flow_qc_utils._dashboard_sample(events)
+
+    assert len(sample) == 20_000
+    assert sample["Time"].iloc[0] == 0.0
+    assert sample["Time"].iloc[-1] == 49_999.0
+    assert flow_qc_utils._dashboard_sample(events.iloc[:100]).equals(events.iloc[:100])
+
+
 def test_run_qc_writes_report_csv_and_dashboard(tmp_path: Path) -> None:
     source = tmp_path / "sample-01.fcs"
     index = np.arange(100)
